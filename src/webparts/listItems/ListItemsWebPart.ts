@@ -12,7 +12,7 @@ import ListItems from './components/ListItems';
 import { IListItemsProps } from './components/IListItemsProps';
 
 export interface IListItemsWebPartProps {
-  description: string;
+  listName: string;
 }
 
 export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWebPartProps> {
@@ -21,7 +21,7 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     const element: React.ReactElement<IListItemsProps > = React.createElement(
       ListItems,
       {
-        description: this.properties.description
+        listName: this.properties.listName
       }
     );
 
@@ -47,8 +47,8 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
             {
               groupName: strings.BasicGroupName,
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneTextField('listName', {
+                  label: strings.ListFieldLabel
                 })
               ]
             }

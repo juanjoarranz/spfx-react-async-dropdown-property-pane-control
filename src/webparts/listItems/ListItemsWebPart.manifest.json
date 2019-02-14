@@ -20,7 +20,7 @@
     "description": { "default": "Shows list items from the selected list" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "List items"
+      "listName": ""
     }
   }]
 }
