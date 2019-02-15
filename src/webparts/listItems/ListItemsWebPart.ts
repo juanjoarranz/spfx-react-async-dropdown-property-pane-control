@@ -48,12 +48,12 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
 
     // reference to item dropdown needed later after selecting a list
     this.itemsDropDown = new PropertyPaneAsyncDropdown( 'item', {
-      label: strings.ItemFieldLabel,
-      loadOptions: this.loadItems.bind( this ),
+      label           : strings.ItemFieldLabel,
+      loadOptions     : this.loadItems.bind( this ),
       onPropertyChange: this.onListItemChange.bind( this ),
-      selectedKey: this.properties.item,
+      selectedKey     : this.properties.item,
       // should be disabled if no list has been selected
-      disabled: !this.properties.listName
+      disabled        : !this.properties.listName
     } );
 
     return {
@@ -71,10 +71,10 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
                 // } )
 
                 new PropertyPaneAsyncDropdown( 'listName', {
-                  label: strings.ListFieldLabel,
-                  loadOptions: this.loadLists.bind( this ),
+                  label           : strings.ListFieldLabel,
+                  loadOptions     : this.loadLists.bind( this ),
                   onPropertyChange: this.onListChange.bind( this ),
-                  selectedKey: this.properties.listName
+                  selectedKey     : this.properties.listName
                 } ),
 
                 this.itemsDropDown
