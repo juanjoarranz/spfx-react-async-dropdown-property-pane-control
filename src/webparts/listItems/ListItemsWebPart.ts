@@ -131,4 +131,12 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
       }, 2000 );
     } );
   }
+
+  private onListItemChange( propertyPath: string, newValue: any ): void {
+    const oldValue: any = get( this.properties, propertyPath );
+    // store new value in web part properties
+    update( this.properties, propertyPath, (): any => { return newValue; } );
+    // refresh web part
+    this.render();
+  }
 }
