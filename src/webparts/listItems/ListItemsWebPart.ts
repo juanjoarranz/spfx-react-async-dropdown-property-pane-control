@@ -14,26 +14,30 @@ import { IListItemsProps } from './components/IListItemsProps';
 export interface IListItemsWebPartProps {
   listName: string;
 }
+import { PropertyPaneAsyncDropdown } from '../../controls/PropertyPaneAsyncDropdown/PropertyPaneAsyncDropdown';
+import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
+import { update, get } from '@microsoft/sp-lodash-subset';
+
 
 export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWebPartProps> {
 
   public render(): void {
-    const element: React.ReactElement<IListItemsProps > = React.createElement(
+    const element: React.ReactElement<IListItemsProps> = React.createElement(
       ListItems,
       {
         listName: this.properties.listName
       }
     );
 
-    ReactDom.render(element, this.domElement);
+    ReactDom.render( element, this.domElement );
   }
 
   protected onDispose(): void {
-    ReactDom.unmountComponentAtNode(this.domElement);
+    ReactDom.unmountComponentAtNode( this.domElement );
   }
 
   protected get dataVersion(): Version {
-    return Version.parse('1.0');
+    return Version.parse( '1.0' );
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
@@ -47,9 +51,17 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
             {
               groupName: strings.BasicGroupName,
               groupFields: [
-                PropertyPaneTextField('listName', {
-                  label: strings.ListFieldLabel
-                })
+                // PropertyPaneTextField( 'listName', {
+                //   label: strings.ListFieldLabel
+                // } )
+
+                new PropertyPaneAsyncDropdown( 'listName', {
+                  label           : strings.ListFieldLabel,
+                  loadOptions     : this.loadLists.bind( this ),
+                  onPropertyChange: this.onListChange.bind( this ),
+                  selectedKey     : this.properties.listName
+                } )
+
               ]
             }
           ]
@@ -57,4 +69,28 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
       ]
     };
   }
+
+  private loadLists(): Promise<IDropdownOption[]> {
+    return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
+      setTimeout( () => {
+        resolve( [{
+          key: 'sharedDocuments',
+          text: 'Shared Documents'
+        },
+        {
+          key: 'myDocuments',
+          text: 'My Documents'
+        }] );
+      }, 2000 );
+    } );
+  }
+
+  private onListChange( propertyPath: string, newValue: any ): void {
+    const oldValue: any = get( this.properties, propertyPath );
+    // store new value in web part properties
+    update( this.properties, propertyPath, (): any => { return newValue; } );
+    // refresh web part
+    this.render();
+  }
+
 }
