@@ -10,14 +10,15 @@ import {
 import * as strings from 'ListItemsWebPartStrings';
 import ListItems from './components/ListItems';
 import { IListItemsProps } from './components/IListItemsProps';
-
-export interface IListItemsWebPartProps {
-  listName: string;
-}
 import { PropertyPaneAsyncDropdown } from '../../controls/PropertyPaneAsyncDropdown/PropertyPaneAsyncDropdown';
 import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
 import { update, get } from '@microsoft/sp-lodash-subset';
 
+
+export interface IListItemsWebPartProps {
+  listName: string;
+  item: string;
+}
 
 export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWebPartProps> {
 
@@ -25,7 +26,8 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     const element: React.ReactElement<IListItemsProps> = React.createElement(
       ListItems,
       {
-        listName: this.properties.listName
+        listName: this.properties.listName,
+        item: this.properties.item
       }
     );
 

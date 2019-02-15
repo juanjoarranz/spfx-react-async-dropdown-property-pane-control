@@ -1,7 +1,8 @@
 declare interface IListItemsWebPartStrings {
   PropertyPaneDescription: string;
-  BasicGroupName: string;
-  ListFieldLabel: string;
+  BasicGroupName         : string;
+  ListFieldLabel         : string;
+  ItemFieldLabel         : string;
 }
 
 declare module 'ListItemsWebPartStrings' {
