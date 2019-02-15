@@ -21,6 +21,7 @@ export interface IListItemsWebPartProps {
 }
 
 export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWebPartProps> {
+  private itemsDropDown: PropertyPaneAsyncDropdown;
 
   public render(): void {
     const element: React.ReactElement<IListItemsProps> = React.createElement(
@@ -43,6 +44,17 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
   }
 
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+
+    // reference to item dropdown needed later after selecting a list
+    this.itemsDropDown = new PropertyPaneAsyncDropdown( 'item', {
+      label           : strings.ItemFieldLabel,
+      loadOptions     : this.loadItems.bind( this ),
+      onPropertyChange: this.onListItemChange.bind( this ),
+      selectedKey     : this.properties.item,
+      // should be disabled if no list has been selected
+      disabled        : !this.properties.listName
+    } );
+
     return {
       pages: [
         {
@@ -62,7 +74,9 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
                   loadOptions: this.loadLists.bind( this ),
                   onPropertyChange: this.onListChange.bind( this ),
                   selectedKey: this.properties.listName
-                } )
+                } ),
+
+                this.itemsDropDown
 
               ]
             }
