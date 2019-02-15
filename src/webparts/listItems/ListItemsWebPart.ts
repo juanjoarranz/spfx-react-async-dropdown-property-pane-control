@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
-import { Version } from '@microsoft/sp-core-library';
+import { Version, Environment, EnvironmentType } from '@microsoft/sp-core-library';
 import {
   BaseClientSideWebPart,
   IPropertyPaneConfiguration,
@@ -13,6 +13,7 @@ import { IListItemsProps } from './components/IListItemsProps';
 import { PropertyPaneAsyncDropdown } from '../../controls/PropertyPaneAsyncDropdown/PropertyPaneAsyncDropdown';
 import { IDropdownOption } from 'office-ui-fabric-react/lib/components/Dropdown';
 import { update, get } from '@microsoft/sp-lodash-subset';
+import { SPHttpClientResponse, SPHttpClient } from '@microsoft/sp-http';
 
 
 export interface IListItemsWebPartProps {
@@ -47,10 +48,10 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
 
     // reference to item dropdown needed later after selecting a list
     this.itemsDropDown = new PropertyPaneAsyncDropdown( 'item', {
-      label           : strings.ItemFieldLabel,
-      loadOptions     : this.loadItems.bind( this ),
+      label: strings.ItemFieldLabel,
+      loadOptions: this.loadItems.bind( this ),
       onPropertyChange: this.onListItemChange.bind( this ),
-      selectedKey     : this.properties.item,
+      selectedKey: this.properties.item,
       // should be disabled if no list has been selected
       disabled: !this.properties.listName
     } );
@@ -70,10 +71,10 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
                 // } )
 
                 new PropertyPaneAsyncDropdown( 'listName', {
-                  label           : strings.ListFieldLabel,
-                  loadOptions     : this.loadLists.bind( this ),
+                  label: strings.ListFieldLabel,
+                  loadOptions: this.loadLists.bind( this ),
                   onPropertyChange: this.onListChange.bind( this ),
-                  selectedKey     : this.properties.listName
+                  selectedKey: this.properties.listName
                 } ),
 
                 this.itemsDropDown
@@ -87,23 +88,46 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
   }
 
   private loadLists(): Promise<IDropdownOption[]> {
-    return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
-      setTimeout( () => {
-        resolve( [{
-          key: 'sharedDocuments',
-          text: 'Shared Documents'
-        },
-        {
-          key: 'myDocuments',
-          text: 'My Documents'
-        }] );
-      }, 2000 );
-    } );
+
+    if ( Environment.type === EnvironmentType.Local ) {
+      return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
+        setTimeout( () => {
+          resolve( [{
+            key: 'sharedDocuments',
+            text: 'Shared Documents'
+          },
+          {
+            key: 'myDocuments',
+            text: 'My Documents'
+          }] );
+        }, 2000 );
+      } );
+    }
+
+    if ( Environment.type === EnvironmentType.SharePoint || Environment.type === EnvironmentType.ClassicSharePoint ) {
+      return this.context.spHttpClient
+        .get( `${ this.context.pageContext.web.absoluteUrl }/_api/web/lists?$filter=Hidden eq false&$select=Id,Title`, SPHttpClient.configurations.v1 )
+        .then( ( response: SPHttpClientResponse ): Promise<any> => {
+          return response.json();
+        } )
+        .then( ( response: any ) => {
+          let lists: any[] = response.value;
+          lists = lists.map( value => { return { key: value.Id, text: value.Title } } )
+            .sort( ( a, b ) => {
+              if ( a.text > b.text ) return 1;
+              if ( a.text < b.text ) return -1;
+              return 0;
+             });
+
+          return lists;
+        });
+    }
   }
 
   private onListChange( propertyPath: string, newValue: any ): void {
     const oldValue: any = get( this.properties, propertyPath );
 
+    debugger;
     // store new value in web part properties
     update( this.properties, propertyPath, (): any => { return newValue; } );
 
@@ -134,33 +158,58 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
 
     const wp: ListItemsWebPart = this;
 
-    return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
-      setTimeout( () => {
-        const items = {
-          sharedDocuments: [
-            {
-              key: 'spfx_presentation.pptx',
-              text: 'SPFx for the masses'
-            },
-            {
-              key: 'hello-world.spapp',
-              text: 'hello-world.spapp'
-            }
-          ],
-          myDocuments: [
-            {
-              key: 'isaiah_cv.docx',
-              text: 'Isaiah CV'
-            },
-            {
-              key: 'isaiah_expenses.xlsx',
-              text: 'Isaiah Expenses'
-            }
-          ]
-        };
-        resolve( items[wp.properties.listName] );
-      }, 2000 );
-    } );
+    if ( Environment.type === EnvironmentType.Local ) {
+
+      return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
+        setTimeout( () => {
+          const items = {
+            sharedDocuments: [
+              {
+                key: 'spfx_presentation.pptx',
+                text: 'SPFx for the masses'
+              },
+              {
+                key: 'hello-world.spapp',
+                text: 'hello-world.spapp'
+              }
+            ],
+            myDocuments: [
+              {
+                key: 'isaiah_cv.docx',
+                text: 'Isaiah CV'
+              },
+              {
+                key: 'isaiah_expenses.xlsx',
+                text: 'Isaiah Expenses'
+              }
+            ]
+          };
+          resolve( items[wp.properties.listName] );
+        }, 2000 );
+      } );
+    }
+
+    if ( Environment.type === EnvironmentType.SharePoint || Environment.type === EnvironmentType.ClassicSharePoint ) {
+      return this.context.spHttpClient
+        .get( `${ this.context.pageContext.web.absoluteUrl }/_api/web/lists/getbytitle('${wp.properties.listName}')/items?$select=Id,Title`, SPHttpClient.configurations.v1 )
+        .then( ( response: SPHttpClientResponse ): Promise<any> => {
+          return response.json();
+        } )
+        .then( ( response: any ) => {
+          let items: any[] = response.value;
+          debugger;
+          items = items.map( value => { return { key: value.Id, text: value.Title } } )
+            .sort( ( a, b ) => {
+              if ( a.text > b.text ) return 1;
+              if ( a.text < b.text ) return -1;
+              return 0;
+             });
+
+          return items;
+        });
+
+    }
+
   }
 
   private onListItemChange( propertyPath: string, newValue: any ): void {
