@@ -58,10 +58,10 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
                 // } )
 
                 new PropertyPaneAsyncDropdown( 'listName', {
-                  label           : strings.ListFieldLabel,
-                  loadOptions     : this.loadLists.bind( this ),
+                  label: strings.ListFieldLabel,
+                  loadOptions: this.loadLists.bind( this ),
                   onPropertyChange: this.onListChange.bind( this ),
-                  selectedKey     : this.properties.listName
+                  selectedKey: this.properties.listName
                 } )
 
               ]
@@ -95,4 +95,40 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     this.render();
   }
 
+  private loadItems(): Promise<IDropdownOption[]> {
+    if ( !this.properties.listName ) {
+      // resolve to empty options since no list has been selected
+      return Promise.resolve();
+    }
+
+    const wp: ListItemsWebPart = this;
+
+    return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
+      setTimeout( () => {
+        const items = {
+          sharedDocuments: [
+            {
+              key: 'spfx_presentation.pptx',
+              text: 'SPFx for the masses'
+            },
+            {
+              key: 'hello-world.spapp',
+              text: 'hello-world.spapp'
+            }
+          ],
+          myDocuments: [
+            {
+              key: 'isaiah_cv.docx',
+              text: 'Isaiah CV'
+            },
+            {
+              key: 'isaiah_expenses.xlsx',
+              text: 'Isaiah Expenses'
+            }
+          ]
+        };
+        resolve( items[wp.properties.listName] );
+      }, 2000 );
+    } );
+  }
 }
