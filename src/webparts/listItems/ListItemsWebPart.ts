@@ -17,8 +17,8 @@ import { SPHttpClientResponse, SPHttpClient } from '@microsoft/sp-http';
 
 
 export interface IListItemsWebPartProps {
-  listName: string;
-  item: string;
+  listId: string;
+  itemId: number;
 }
 
 export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWebPartProps> {
@@ -28,8 +28,8 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     const element: React.ReactElement<IListItemsProps> = React.createElement(
       ListItems,
       {
-        listName: this.properties.listName,
-        item: this.properties.item
+        listName: this.properties.listId, // temp
+        item: this.properties.itemId ? this.properties.itemId.toString(): '' // temp
       }
     );
 
@@ -47,13 +47,13 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
 
     // reference to item dropdown needed later after selecting a list
-    this.itemsDropDown = new PropertyPaneAsyncDropdown( 'item', {
+    this.itemsDropDown = new PropertyPaneAsyncDropdown( 'itemId', {
       label           : strings.ItemFieldLabel,
       loadOptions     : this.loadItems.bind( this ),
       onPropertyChange: this.onListItemChange.bind( this ),
-      selectedKey     : this.properties.item,
+      selectedKey     : this.properties.itemId,
       // should be disabled if no list has been selected
-      disabled        : !this.properties.listName
+      disabled        : !this.properties.listId
     } );
 
     return {
@@ -70,11 +70,11 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
                 //   label: strings.ListFieldLabel
                 // } )
 
-                new PropertyPaneAsyncDropdown( 'listName', {
+                new PropertyPaneAsyncDropdown( 'listId', {
                   label           : strings.ListFieldLabel,
                   loadOptions     : this.loadLists.bind( this ),
                   onPropertyChange: this.onListChange.bind( this ),
-                  selectedKey     : this.properties.listName
+                  selectedKey     : this.properties.listId
                 } ),
 
                 this.itemsDropDown
@@ -127,21 +127,21 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
   private onListChange( propertyPath: string, newValue: any ): void {
     const oldValue: any = get( this.properties, propertyPath );
 
-    debugger;
+    //debugger;
     // store new value in web part properties
     update( this.properties, propertyPath, (): any => { return newValue; } );
 
     // reset selected item
-    this.properties.item = undefined;
+    this.properties.itemId = undefined;
 
     // store new value in web part properties
-    update( this.properties, 'item', (): any => { return this.properties.item; } );
+    update( this.properties, 'item', (): any => { return this.properties.itemId; } );
 
     // refresh web part
     this.render();
 
     // reset selected values in item dropdown
-    this.itemsDropDown.properties.selectedKey = this.properties.item;
+    this.itemsDropDown.properties.selectedKey = this.properties.itemId;
 
     // allow to load items
     this.itemsDropDown.properties.disabled = false;
@@ -151,7 +151,7 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
   }
 
   private loadItems(): Promise<IDropdownOption[]> {
-    if ( !this.properties.listName ) {
+    if ( !this.properties.listId ) {
       // resolve to empty options since no list has been selected
       return Promise.resolve();
     }
@@ -184,30 +184,37 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
               }
             ]
           };
-          resolve( items[wp.properties.listName] );
+          resolve( items[wp.properties.listId] );
         }, 2000 );
       } );
     }
 
     if ( Environment.type === EnvironmentType.SharePoint || Environment.type === EnvironmentType.ClassicSharePoint ) {
-      return this.context.spHttpClient
-        .get( `${ this.context.pageContext.web.absoluteUrl }/_api/web/lists/getbytitle('${wp.properties.listName}')/items?$select=Id,Title`, SPHttpClient.configurations.v1 )
-        .then( ( response: SPHttpClientResponse ): Promise<any> => {
-          return response.json();
-        } )
-        .then( ( response: any ) => {
-          let items: any[] = response.value;
-          debugger;
-          items = items.map( value => { return { key: value.Id, text: value.Title } } )
-            .sort( ( a, b ) => {
-              if ( a.text > b.text ) return 1;
-              if ( a.text < b.text ) return -1;
-              return 0;
-             });
+      let query = wp.properties.listId !== '' ? `lists(guid'${ wp.properties.listId }')/items?$select=Id,Title` : null;
 
-          return items;
-        });
+      if ( query ) {
+        return this.context.spHttpClient
+        .get( `${ this.context.pageContext.web.absoluteUrl }/_api/web/${ query }`, SPHttpClient.configurations.v1 )
+          .then( ( response: SPHttpClientResponse ): Promise<any> => {
+            return response.json();
+          } )
+          .then( ( response: any ) => {
+            let items: any[] = response.value;
+            debugger;
+            items = items.map( value => { return { key: value.Id, text: value.Title } } )
+              .sort( ( a, b ) => {
+                if ( a.text > b.text ) return 1;
+                if ( a.text < b.text ) return -1;
+                return 0;
+              } );
 
+            return items;
+          } )
+          .catch( error => {
+            console.log( 'error', error );
+            return Promise.resolve();
+          } );
+      }
     }
 
   }
