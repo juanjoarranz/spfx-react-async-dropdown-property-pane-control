@@ -105,8 +105,9 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     }
 
     if ( Environment.type === EnvironmentType.SharePoint || Environment.type === EnvironmentType.ClassicSharePoint ) {
+      // BaseTemplate 600 = External List
       return this.context.spHttpClient
-        .get( `${ this.context.pageContext.web.absoluteUrl }/_api/web/lists?$filter=Hidden eq false&$select=Id,Title`, SPHttpClient.configurations.v1 )
+      .get( `${ this.context.pageContext.web.absoluteUrl }/_api/web/lists?$filter=Hidden eq false and BaseTemplate ne 600&$select=Id,Title`, SPHttpClient.configurations.v1 )
         .then( ( response: SPHttpClientResponse ): Promise<any> => {
           return response.json();
         } )
@@ -200,7 +201,7 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
           } )
           .then( ( response: any ) => {
             let items: any[] = response.value;
-            debugger;
+            //debugger;
             items = items.map( value => { return { key: value.Id, text: value.Title } } )
               .sort( ( a, b ) => {
                 if ( a.text > b.text ) return 1;
