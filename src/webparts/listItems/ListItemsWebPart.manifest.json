@@ -20,8 +20,11 @@
     "description": { "default": "Shows list items from the selected list" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "listName": "",
-      "item": ""
+      //"listName": "",
+      //"item": ""
+
+      "listId": "",
+      "itemId": 0
     }
   }]
 }
