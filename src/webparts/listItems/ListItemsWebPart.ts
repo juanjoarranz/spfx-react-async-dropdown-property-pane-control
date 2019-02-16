@@ -17,22 +17,22 @@ import { SPHttpClientResponse, SPHttpClient } from '@microsoft/sp-http';
 
 
 export interface IListItemsWebPartProps {
-  listId: string;
-  itemId: number;
+  listId   : string;
+  itemId   : number;
+  listName : string;
+  itemTitle: string;
 }
 
 export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWebPartProps> {
   private itemsDropDown: PropertyPaneAsyncDropdown;
 
   public render(): void {
-    const element: React.ReactElement<IListItemsProps> = React.createElement(
-      ListItems,
-      {
-        listName: this.properties.listId, // temp
-        item: this.properties.itemId ? this.properties.itemId.toString(): '' // temp
-      }
-    );
+    const propsToSend = {
+      listName: this.properties.listName,
+      item    : this.properties.itemTitle
+    };
 
+    const element: React.ReactElement<IListItemsProps> = React.createElement( ListItems, propsToSend );
     ReactDom.render( element, this.domElement );
   }
 
@@ -125,18 +125,20 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     }
   }
 
-  private onListChange( propertyPath: string, newValue: any ): void {
+  private onListChange( propertyPath: string, option: any ): void {
     const oldValue: any = get( this.properties, propertyPath );
 
-    //debugger;
     // store new value in web part properties
-    update( this.properties, propertyPath, (): any => { return newValue; } );
+    update( this.properties, propertyPath, (): any => { return option.key; } );
 
     // reset selected item
     this.properties.itemId = undefined;
 
     // store new value in web part properties
-    update( this.properties, 'item', (): any => { return this.properties.itemId; } );
+    update( this.properties, 'itemId', (): any => { return this.properties.itemId; } );
+
+    this.properties.listName = option.text;
+    this.properties.itemTitle = '';
 
     // refresh web part
     this.render();
@@ -160,7 +162,6 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
     const wp: ListItemsWebPart = this;
 
     if ( Environment.type === EnvironmentType.Local ) {
-
       return new Promise<IDropdownOption[]>( ( resolve: ( options: IDropdownOption[] ) => void, reject: ( error: any ) => void ) => {
         setTimeout( () => {
           const items = {
@@ -201,8 +202,7 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
           } )
           .then( ( response: any ) => {
             let items: any[] = response.value;
-            //debugger;
-            items = items.map( value => { return { key: value.Id, text: value.Title } } )
+            items = items.map( value => { return { key: value.Id, text: value.Title ? value.Title : value.Id.toString() } } )
               .sort( ( a, b ) => {
                 if ( a.text > b.text ) return 1;
                 if ( a.text < b.text ) return -1;
@@ -217,13 +217,15 @@ export default class ListItemsWebPart extends BaseClientSideWebPart<IListItemsWe
           } );
       }
     }
-
   }
 
-  private onListItemChange( propertyPath: string, newValue: any ): void {
+  private onListItemChange( propertyPath: string, option: any ): void {
     const oldValue: any = get( this.properties, propertyPath );
+
     // store new value in web part properties
-    update( this.properties, propertyPath, (): any => { return newValue; } );
+    update( this.properties, propertyPath, (): any => { return option.key; } );
+    this.properties.itemTitle = option.text;
+
     // refresh web part
     this.render();
   }
